@@ -5,5 +5,7 @@ project(ProjectWorkNgrams_OpenMP)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 
 add_executable(ProjectWorkNgrams_OpenMP main.cpp
-        find_Ngrams_sequential.cpp
-        find_Ngrams_parallel.cpp)
+        find_Ngrams.cpp
+        utils.cpp
+        utils.h
+        find_Ngrams.h)

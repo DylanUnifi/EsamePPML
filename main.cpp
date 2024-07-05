@@ -1,87 +1,67 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <sstream>
-#include <algorithm>
-#include <omp.h>
+#include "utils.h"
+#include "find_Ngrams.h"
 
-// Fonction pour tokenizer le texte
-std::vector<std::string> tokenize(const std::string& text) {
-    std::istringstream stream(text);
-    std::string word;
-    std::vector<std::string> tokens;
 
-    while (stream >> word) {
-        tokens.push_back(word);
-    }
-
-    return tokens;
-}
-
-// Fonction pour générer les n-grams
-std::vector<std::string> generate_ngrams(const std::vector<std::string>& tokens, int n) {
-    std::vector<std::string> ngrams;
-    int size = tokens.size();
-
-#pragma omp parallel for
-    for (int i = 0; i <= size - n; ++i) {
-        std::string ngram = tokens[i];
-        for (int j = 1; j < n; ++j) {
-            ngram += " " + tokens[i + j];
-        }
-#pragma omp critical
-        ngrams.push_back(ngram);
-    }
-
-    return ngrams;
-}
-
-// Fonction pour compter les occurrences des n-grams
-std::unordered_map<std::string, int> count_ngrams(const std::vector<std::string>& ngrams) {
-    std::unordered_map<std::string, int> ngram_counts;
-
-#pragma omp parallel for
-    for (size_t i = 0; i < ngrams.size(); ++i) {
-#pragma omp critical
-        ngram_counts[ngrams[i]]++;
-    }
-
-    return ngram_counts;
-}
-
-// Comparateur pour le tri
-bool compare_ngrams(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
-    return b.second < a.second;
-}
-
-// Fonction pour afficher les n-grams les plus fréquents
-void display_most_common_ngrams(const std::unordered_map<std::string, int>& ngram_counts, int top_n) {
-    std::vector<std::pair<std::string, int>> sorted_ngrams(ngram_counts.begin(), ngram_counts.end());
-
-    std::sort(sorted_ngrams.begin(), sorted_ngrams.end(), compare_ngrams);
-
-    for (int i = 0; i < top_n && i < sorted_ngrams.size(); ++i) {
-        std::cout << sorted_ngrams[i].first << ": " << sorted_ngrams[i].second << " occurrences\n";
-    }
-}
 
 int main() {
-    std::string text = "Ceci est un exemple de texte pour démontrer les bi-grams et tri-grams en utilisant OpenMP pour la parallélisation.";
 
-    std::vector<std::string> tokens = tokenize(text);
+    try {
+        std::string text = read_file("/home/dylan/CLionProjects/ProjectWorkNgrams_OpenMP/data/book2.txt");
 
-    std::vector<std::string> bi_grams = generate_ngrams(tokens, 2);
-    std::vector<std::string> tri_grams = generate_ngrams(tokens, 3);
+        // Répéter le texte pour créer des tailles de texte différentes
+        std::string large_text;
+        for (int i = 0; i < 10; ++i) {
+            large_text += text + " ";
 
-    std::unordered_map<std::string, int> bi_gram_counts = count_ngrams(bi_grams);
-    std::unordered_map<std::string, int> tri_gram_counts = count_ngrams(tri_grams);
+            std::vector<std::string> tokens = tokenize(large_text);
 
-    std::cout << "Bi-grams:\n";
-    display_most_common_ngrams(bi_gram_counts, 10);
+            // Tester les bi-grams
+            std::cout << "Benchmarking bi-grams...\n";
 
-    std::cout << "\nTri-grams:\n";
-    display_most_common_ngrams(tri_gram_counts, 10);
+            double sequential_time = measure_time([&tokens]() {
+                auto bi_grams = generate_ngrams(tokens, 2);
+                auto bi_gram_counts = count_ngrams(bi_grams);
+            });
 
+            double parallel_time = measure_time([&tokens]() {
+                auto bi_grams = generate_ngrams_par(tokens, 2);
+                auto bi_gram_counts = count_ngrams_par(bi_grams);
+            });
+
+            std::cout << "Sequential bi-grams time: " << sequential_time << " seconds\n";
+            std::cout << "Parallel bi-grams time: " << parallel_time << " seconds\n";
+
+            // Tester les tri-grams
+            std::cout << "\nBenchmarking tri-grams...\n";
+
+            sequential_time = measure_time([&tokens]() {
+                auto tri_grams = generate_ngrams(tokens, 3);
+                auto tri_gram_counts = count_ngrams(tri_grams);
+            });
+
+            parallel_time = measure_time([&tokens]() {
+                auto tri_grams = generate_ngrams_par(tokens, 3);
+                auto tri_gram_counts = count_ngrams_par(tri_grams);
+            });
+
+            std::cout << "Sequential tri-grams time: " << sequential_time << " seconds\n";
+            std::cout << "Parallel tri-grams time: " << parallel_time << " seconds\n";
+
+        }
+    }catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+       /* std::cout << "Bi-grams: sequential\n";
+        display_most_common_ngrams(bi_gram_counts_seq, 10);
+
+        std::cout << "Bi-grams: parallel\n";
+        display_most_common_ngrams(bi_gram_counts_par, 10);
+
+        std::cout << "\nTri-grams parallel:\n";
+        display_most_common_ngrams(tri_gram_counts_par, 10);
+
+        std::cout << "\nTri-grams sequential:\n";
+        display_most_common_ngrams(tri_gram_counts_seq, 10);*/
     return 0;
 }
