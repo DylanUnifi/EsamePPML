@@ -79,13 +79,13 @@ void generate_and_count_ngrams_seq(const std::string &filename, int n, std::stri
     }
 
     // OUTPUT PHASE
-    std::ofstream outputFile;
-    outputFile.open(out_folder_sequential + std::to_string(n) + "gram_outputSequentialVersion.txt");
-
-    for(auto& kv : histogram) // sorted, as we're using std::map
-        outputFile << kv.first << "\t" << kv.second << std::endl;
-
-    outputFile.close();
+    // std::ofstream outputFile;
+    // outputFile.open(out_folder_sequential + std::to_string(n) + "gram_outputSequentialVersion.txt");
+    //
+    // for(auto& kv : histogram) // sorted, as we're using std::map
+    //     outputFile << kv.first << "\t" << kv.second << std::endl;
+    //
+    // outputFile.close();
 }
 
 
@@ -102,10 +102,6 @@ void generate_and_count_ngrams_par(const std::string &filename, int n, int chunk
 
 #pragma omp parallel num_threads(num_threads) shared(file, jobsQueue, n, chunk_size, std::cout)
     {
-#pragma omp master
-        {
-            std::cout << "Number of threads: " << omp_get_num_threads() <<std:: endl;
-        }
 #pragma omp single nowait
         {
             std::vector<std::string> tokens;
@@ -212,5 +208,5 @@ void generate_and_count_ngrams_par(const std::string &filename, int n, int chunk
         }
         histogramCollector.addPartialHistogram(partialHistogram); // (collect the histograms and sum them only when it's time to write to file)
     }
-    histogramCollector.writeHistogramToFile(out_folder_parallel + std::to_string(n) + "gram_outputParallelVersion.txt");
+    //histogramCollector.writeHistogramToFile(out_folder_parallel + std::to_string(n) + "gram_outputParallelVersion.txt");
 }
